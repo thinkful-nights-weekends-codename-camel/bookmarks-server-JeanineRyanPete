@@ -2,6 +2,7 @@ const express = require('express');
 const bookmarksJson = express.json();
 const bookmarksRouter = express.Router();
 const uuid = require('uuid/v4');
+const logger = require('./logger');
 const store = [
   {
     id: 0,
@@ -34,16 +35,19 @@ bookmarksRouter
   .post(bookmarksJson, (req, res) => {
     for(let entry of ["title","url","rating"]) {
       if (!req.body[entry]){
+        logger.error(`Title, URL, and Rating are required.`)
         return res.status(400).send('Invalid data');
       }
     }
     const { title, url, rating } = req.body;
     if (!Number(rating) || rating < 0 || rating > 5) {
-      return res.status(400).send('Rating should be a number greater than 0 and less than 5');
+      logger.error(`The rating must be a number, greater than 0, and less than 6.`)
+      return res.status(400).send('Rating should be a number greater than 0 and less than 6');
     }
     const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%.\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%\+.~#?&//=]*)/;
 
     if (!url.match(regexURL)) {
+      logger.error(`The URL entered is not a valid URL.`)
       return res
         .status(400)
         .send('Must be a valid URL');
@@ -57,6 +61,7 @@ bookmarksRouter
       rating
     };
     store.push(newBookmark);
+    logger.info(`New Bookmark with id: ${id} created`);
     
     res.status(201).json(newBookmark).send();
   })
@@ -64,10 +69,11 @@ bookmarksRouter
 bookmarksRouter
   .route('/bookmarks/:id')
   .get((req,res) => {
-    const id = req.params;
+    const { id } = req.params;
     const bookmarks = store.find(bookmark => bookmark.id == id);
     if (!bookmarks) {
-      return res.status(404).send('No bookmarks found. Try again.')
+      logger.error(`Bookmark with id ${id} was not found.`);
+      return res.status(404).send('Bookmark not found.')
     }
     res.json(bookmarks)
   })
@@ -75,6 +81,7 @@ bookmarksRouter
     const { id } = req.params;
     const bookmarks = store.findIndex(bookmark => bookmark.id == id);
     store.splice(bookmarks, 1);
+    logger.info(`Bookmark with id ${id} deleted.`)
     res.status(201).send('Bookmark deleted.')
   })
 
