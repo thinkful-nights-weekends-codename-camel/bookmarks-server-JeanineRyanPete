@@ -87,13 +87,6 @@ bookmarksRouter
         res.json(bookmark)
       })
       .catch(next)
-    // const { id } = req.params;
-    // const bookmarks = store.find(bookmark => bookmark.id == id);
-    // if (!bookmarks) {
-    //   logger.error(`Bookmark with id ${id} was not found.`);
-    //   return res.status(404).send('Bookmark not found.')
-    // }
-    // res.json(bookmarks)
   })
   .delete((req,res) => {
     const { id } = req.params;
