@@ -13,7 +13,7 @@ app.use(morgan(morganOption));
 app.use(cors());
 app.use(helmet());
 
-// CANNOT GET TESTS TO WORK WITH VALIDATION IN PLACE
+
 app.use(function validateBearerToken(req, res, next) {
   const apiToken = process.env.API_TOKEN
   const authToken = req.get('Authorization')

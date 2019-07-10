@@ -3,7 +3,7 @@ const knex = require('knex')
 const app = require('../src/app')
 const { makeBookmarksArray } = require('./bookmarks.fixtures');
 
-describe.only('Bookmarks Endpoints', function() {
+describe('Bookmarks Endpoints', function () {
   let db
 
   before('make knex instance', () => {
@@ -29,25 +29,25 @@ describe.only('Bookmarks Endpoints', function() {
           .expect(200, [])
       })
     });
-    
+
     context('Given there are bookmarks in the database', () => {
       const testBookmarks = makeBookmarksArray();
-  
+
       beforeEach('insert bookmarks', () => {
-        return db 
+        return db
           .into('bookmarks_links')
           .insert(testBookmarks)
       });
 
       it('responds with 200 and all of the bookmarks', () => {
         return supertest(app)
-        .get('/bookmarks')
-        .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-        .expect(200, testBookmarks)
+          .get('/bookmarks')
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200, testBookmarks)
       })
     })
   });
-  
+
   describe('GET /bookmarks/:bookmarks_id', () => {
     context(`Given no bookmarks`, () => {
       it(`responds with 404`, () => {
@@ -63,7 +63,7 @@ describe.only('Bookmarks Endpoints', function() {
       const testBookmarks = makeBookmarksArray();
 
       beforeEach('insert bookmarks', () => {
-        return db 
+        return db
           .into('bookmarks_links')
           .insert(testBookmarks)
       });
@@ -78,4 +78,30 @@ describe.only('Bookmarks Endpoints', function() {
       });
     });
   });
+  describe.only(`POST /bookmarks`, () => {
+    it(`creates a bookmark, responds with 201 and new bookmark`, () => {
+      const newBookmark = {
+        id: 42,
+        title: 'test title',
+        url: 'https://courses.thinkful.com/node-postgres-v1/checkpoint/16',
+        rating: 1,
+      }
+      return supertest(app)
+        .post('/bookmarks')
+        .send(newBookmark)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.id).to.eql(newBookmark.id)
+          expect(res.body.title).to.eql(newBookmark.title)
+          expect(res.body.url).to.eql(newBookmark.url)
+          expect(res.body.rating).to.eql(newBookmark.rating)
+        })
+        .then(postRes =>
+          supertest(app)
+            .get(`/bookmarks/${postRes.body.id}`)
+            .expect(postRes.body)
+        )
+    });
+  });
+
 });

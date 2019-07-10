@@ -1,7 +1,7 @@
 {
   "name": "express-boilerplate",
   "version": "1.0.0",
-  "description": "",
+  "description": "This boilerplate will be used to start new Express projects.",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require test/setup.js",
@@ -31,5 +31,16 @@
     "nodemon": "^1.19.1",
     "postgrator-cli": "^3.1.0",
     "supertest": "^4.0.2"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thinkful-nights-weekends-codename-camel/bookmarks-server-JeanineRyanPete.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thinkful-nights-weekends-codename-camel/bookmarks-server-JeanineRyanPete/issues"
+  },
+  "homepage": "https://github.com/thinkful-nights-weekends-codename-camel/bookmarks-server-JeanineRyanPete#readme"
 }
