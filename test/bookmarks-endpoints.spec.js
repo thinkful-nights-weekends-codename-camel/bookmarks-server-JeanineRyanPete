@@ -18,7 +18,7 @@ describe('Bookmarks Endpoints', function () {
 
   before('clean the table', () => db('bookmarks_links').truncate());
 
-  // afterEach('cleanup', () => db('bookmarks_links').truncate());
+  afterEach('cleanup', () => db('bookmarks_links').truncate());
 
   describe('GET /bookmarks', () => {
     context('Given no bookmarks', () => {
@@ -48,7 +48,7 @@ describe('Bookmarks Endpoints', function () {
     })
   });
 
-  describe('GET /bookmarks/:bookmarks_id', () => {
+  describe.only('GET /bookmarks/:bookmarks_id', () => {
     context(`Given no bookmarks`, () => {
       it(`responds with 404`, () => {
         const bookmarkId = 123456;
@@ -77,32 +77,55 @@ describe('Bookmarks Endpoints', function () {
           .expect(200, expectedBookmark)
       });
     });
-  });
-  describe.only(`POST /bookmarks`, () => {
-    it(`creates a bookmark, responds with 201 and new bookmark`, () => {
-      const newBookmark = {
-        // id: 42,
-        title: 'test title',
-        url: 'https://google.com',
-        rating: 1,
+    context(`Given an XSS attack bookmark`, () => { // plural or single?
+      const maliciousBookmark = {
+        title: 'bad malware <script>alert("xss");</script>',
+        url: 'http://thiefs.com',
+        rating: 0,
+        description: ' '
       }
-      return supertest(app)
-        .post('/bookmarks')
-        .send(newBookmark)
-        .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-        .expect(201)
-        .expect(res => {
-          // expect(res.body.id).to.eql(newBookmark.id)
-          expect(res.body.title).to.eql(newBookmark.title)
-          expect(res.body.url).to.eql(newBookmark.url)
-          expect(res.body.rating).to.eql(newBookmark.rating)
-        })
-        .then(postRes =>
-          supertest(app)
-            .get(`/bookmarks/${postRes.body.id}`)
-            .expect(postRes.body)
-        )
-    });
+      beforeEach('insert malicious bookmark', () => {
+        return db
+          .into('bookmarks_link')
+          .insert([maliciousBookmark])
+      })
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/articles/${maliciousBookmark.id}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.title).to.eql('bad malware &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+            expect(res.body.url).to.eql(`http://thiefs.com`)
+          })
+
+      });
+      describe.only(`POST /bookmarks`, () => {
+        it(`creates a bookmark, responds with 201 and new bookmark`, () => {
+          const newBookmark = {
+          
+            title: 'test title',
+            url: 'https://google.com',
+            rating: 1,
+          }
+          return supertest(app)
+            .post('/bookmarks')
+            .send(newBookmark)
+            .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+            .expect(201)
+            .expect(res => {
+              // expect(res.body.id).to.eql(newBookmark.id)
+              expect(res.body.title).to.eql(newBookmark.title)
+              expect(res.body.url).to.eql(newBookmark.url)
+              expect(res.body.rating).to.eql(newBookmark.rating)
+            })
+            .then(postRes =>
+              supertest(app)
+                .get(`/bookmarks/${postRes.body.id}`)
+                .expect(postRes.body)
+            )
+        });
+      });
+    })
   });
-        
-});
+})
