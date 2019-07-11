@@ -48,7 +48,7 @@ describe('Bookmarks Endpoints', function () {
     })
   });
 
-  describe('GET /bookmarks/:bookmarks_id', () => {
+  describe.only('GET /bookmarks/:bookmarks_id', () => {
     context(`Given no bookmarks`, () => {
       it(`responds with 404`, () => {
         const bookmarkId = 123456;
@@ -59,7 +59,7 @@ describe('Bookmarks Endpoints', function () {
       })
     });
 
-    context('Given there are articles in the database', () => {
+    context('Given there are bookmarks in the database', () => {
       const testBookmarks = makeBookmarksArray();
 
       beforeEach('insert bookmarks', () => {
@@ -77,11 +77,37 @@ describe('Bookmarks Endpoints', function () {
           .expect(200, expectedBookmark)
       });
     });
+
+    context(`Given an XSS attack bookmark`, () => {
+      const maliciousBookmark = {
+        id: 911,
+        title: 'Silly rabbit <script>alert("xss");</script>',
+        url: 'http://www.googlyeyes.com',
+        rating: 5,
+        description: `Bad image <img src="https://url.to.file.which/does-not.exist" onerror="alert(document.cookie);">. But not <strong>all</strong> bad.`
+      }
+
+      beforeEach('insert malicious bookmark', () => {
+        return db 
+          .into('bookmarks_links')
+          .insert([ maliciousBookmark])
+      })
+
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/bookmarks/${maliciousBookmark.id}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.title).to.eql('Silly rabbit &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+            expect(res.body.description).to.eql(`Bad image <img src="https://url.to.file.which/does-not.exist">. But not <strong>all</strong> bad.`)
+          })
+      })
+    })
   });
-  describe.only(`POST /bookmarks`, () => {
+  describe(`POST /bookmarks`, () => {
     it(`creates a bookmark, responds with 201 and new bookmark`, () => {
       const newBookmark = {
-        // id: 42,
         title: 'test title',
         url: 'https://google.com',
         rating: 1,
@@ -92,7 +118,6 @@ describe('Bookmarks Endpoints', function () {
         .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
         .expect(201)
         .expect(res => {
-          // expect(res.body.id).to.eql(newBookmark.id)
           expect(res.body.title).to.eql(newBookmark.title)
           expect(res.body.url).to.eql(newBookmark.url)
           expect(res.body.rating).to.eql(newBookmark.rating)
@@ -105,5 +130,4 @@ describe('Bookmarks Endpoints', function () {
         )
     });
   });
-
 });
