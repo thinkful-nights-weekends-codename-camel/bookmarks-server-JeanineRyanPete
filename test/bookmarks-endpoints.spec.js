@@ -18,7 +18,7 @@ describe('Bookmarks Endpoints', function () {
 
   before('clean the table', () => db('bookmarks_links').truncate());
 
-  afterEach('cleanup', () => db('bookmarks_links').truncate());
+  // afterEach('cleanup', () => db('bookmarks_links').truncate());
 
   describe('GET /bookmarks', () => {
     context('Given no bookmarks', () => {
@@ -100,10 +100,9 @@ describe('Bookmarks Endpoints', function () {
         .then(postRes =>
           supertest(app)
             .get(`/bookmarks/${postRes.body.id}`)
-            .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
             .expect(postRes.body)
         )
     });
   });
-
+        
 });

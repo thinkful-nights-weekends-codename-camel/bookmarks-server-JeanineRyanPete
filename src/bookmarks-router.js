@@ -3,6 +3,7 @@ const bookmarksJson = express.json();
 const bookmarksRouter = express.Router();
 const uuid = require('uuid/v4');
 const logger = require('./logger');
+const xss = require( 'xss')
 const BookmarksService = require('./bookmarks-service');
 const store = [
   {
@@ -89,7 +90,13 @@ bookmarksRouter
             error: { message: `Bookmark does not exist` }
           })
         }
-        res.json(bookmark)
+        res.json({
+                    //  id: bookmark.id,
+                    title: bookmark.title,
+                    url: xss(bookmark.url), // sanitize title
+                    rating: xss(bookmark.rating), // sanitize content
+                    description: article.description,
+                  })
       })
       .catch(next)
   })
