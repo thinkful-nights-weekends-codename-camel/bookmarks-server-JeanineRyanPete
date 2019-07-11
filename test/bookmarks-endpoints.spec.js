@@ -48,7 +48,7 @@ describe('Bookmarks Endpoints', function () {
     })
   });
 
-  describe.only('GET /bookmarks/:bookmarks_id', () => {
+  describe('GET /bookmarks/:bookmarks_id', () => {
     context(`Given no bookmarks`, () => {
       it(`responds with 404`, () => {
         const bookmarkId = 123456;
@@ -111,6 +111,7 @@ describe('Bookmarks Endpoints', function () {
         title: 'test title',
         url: 'https://google.com',
         rating: 1,
+        description: '',
       }
       return supertest(app)
         .post('/bookmarks')
@@ -130,4 +131,41 @@ describe('Bookmarks Endpoints', function () {
         )
     });
   });
+
+  describe(`DELETE /bookmarks/:bookmark_id`, () => {
+    context(`Given no bookmarks`, () => {
+      it(`responds with 404`, () => {
+        const bookmarkId = 123456;
+        return supertest(app)
+          .delete(`/bookmarks/${bookmarkId}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(404,{ error: { message: `Bookmark does not exist`}})
+      })
+    })
+
+    context('Given there are bookmarks in the database', () => {
+      const testBookmarks = makeBookmarksArray();
+
+      beforeEach('insert bookmarks', () => {
+        return db
+          .into('bookmarks_links')
+          .insert(testBookmarks)
+      })
+
+      it('responds with 204 and removes the bookmarks', () => {
+        const idToRemove = 2;
+        const expectedBookmarks = testBookmarks.filter(bookmark => bookmark.id !== idToRemove)
+        return supertest(app)
+          .delete(`/bookmarks/${idToRemove}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(204)
+          .then(res => 
+            supertest(app)
+              .get(`/bookmarks`)
+              .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+              .expect(expectedBookmarks)
+          )
+      })
+    })
+  })
 });
