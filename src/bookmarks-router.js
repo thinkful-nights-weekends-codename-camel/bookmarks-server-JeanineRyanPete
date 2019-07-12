@@ -1,32 +1,17 @@
 const express = require('express');
+const xss = require('xss');
 const bookmarksJson = express.json();
 const bookmarksRouter = express.Router();
-const uuid = require('uuid/v4');
 const logger = require('./logger');
 const BookmarksService = require('./bookmarks-service');
-const store = [
-  {
-    id: 0,
-    title: 'Google',
-    url: 'http://www.google.com',
-    rating: '3',
-    desc: 'Internet-related services and products.'
-  },
-  {
-    id: 1,
-    title: 'Thinkful',
-    url: 'http://www.thinkful.com',
-    rating: '5',
-    desc: '1-on-1 learning to accelerate your way to a new high-growth tech career!'
-  },
-  {
-    id: 2,
-    title: 'Github',
-    url: 'http://www.github.com',
-    rating: '4',
-    desc: 'brings together the world\'s largest community of developers.'
-  }
-];
+
+const serializeBookmark = bookmark => ({
+  id: bookmark.id,
+  title: xss(bookmark.title),
+  url: bookmark.url,
+  rating: Number(bookmark.rating),
+  description: xss(bookmark.description),
+})
 
 bookmarksRouter
   .route('/bookmarks')
@@ -50,15 +35,15 @@ bookmarksRouter
       logger.error(`The rating must be a number, greater than 0, and less than 6.`)
       return res.status(400).send('Rating should be a number greater than 0 and less than 6');
     }
-    // const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%.\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%\+.~#?&//=]*)/;
+    const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%.\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%\+.~#?&//=]*)/;
 
-    // if (!url.match(regexURL)) {
-    //   logger.error(`The URL entered is not a valid URL.`)
-    //   return res
-    //     .status(400)
-    //     .send('Must be a valid URL');
-    // }
-    // const id = uuid();
+    if (!url.match(regexURL)) {
+      logger.error(`The URL entered is not a valid URL.`)
+      return res
+        .status(400)
+        .send('Must be a valid URL');
+    }
+
     const newBookmark =
     {
       title,
@@ -71,34 +56,42 @@ bookmarksRouter
         res.status(201).json(bookmark)
       })
       .catch(next)
-  
-    // logger.info(`New Bookmark with id: ${id} created`);
-
-    // res.status(201).json(newBookmark).send();
   })
 
 bookmarksRouter
-  .route('/bookmarks/:id')
-  .get((req, res, next) => {
-    const knexInstance = req.app.get('db');
-    BookmarksService.getById(knexInstance, req.params.id)
+  .route('/bookmarks/:bookmark_id')
+  .all((req, res, next) => {
+    const { bookmark_id } = req.params
+    BookmarksService.getById(
+      req.app.get('db'),
+      bookmark_id
+    )
       .then(bookmark => {
         if (!bookmark) {
-          logger.error(`Bookmark with id ${req.params.id} was not found.`);
+          logger.error(`Bookmark with id ${bookmark_id} not found.`)
           return res.status(404).json({
-            error: { message: `Bookmark does not exist` }
+            error: { message: `Bookmark does not exist`}
           })
         }
-        res.json(bookmark)
+        res.bookmark = bookmark
+        next()
       })
       .catch(next)
   })
-  .delete((req, res) => {
-    const { id } = req.params;
-    const bookmarks = store.findIndex(bookmark => bookmark.id == id);
-    store.splice(bookmarks, 1);
-    logger.info(`Bookmark with id ${id} deleted.`)
-    res.status(201).send('Bookmark deleted.')
+  .get((req, res) => {
+    res.json(serializeBookmark(res.bookmark))
+  })
+  .delete((req, res, next) => {
+    const { bookmark_id } = req.params
+    BookmarksService.deleteBookmark(
+      req.app.get('db'),
+      bookmark_id
+    )
+      .then(() => {
+        logger.info(`Bookmark with id ${bookmark_id} deleted.`)
+        res.status(204).end()
+      })
+      .catch(next)
   })
 
 module.exports = bookmarksRouter;

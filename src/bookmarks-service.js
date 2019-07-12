@@ -4,7 +4,6 @@ const BookmarksService = {
     return knex.select('*').from('bookmarks_links')
   },
   insertBookmark(knex,newBookmark) {
-    console.log("BookmarksService: insertbookmark ", newBookmark);
     return knex
       .insert(newBookmark)
       .into('bookmarks_links')
@@ -21,6 +20,7 @@ const BookmarksService = {
     .first()
   },
   deleteBookmark(knex, id) {
+    console.log("BookmarksService: deleteBookmark ", id);
     return knex('bookmarks_links')
       .where({ id })
       .delete()

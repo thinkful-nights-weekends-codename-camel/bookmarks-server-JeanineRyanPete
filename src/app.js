@@ -9,7 +9,9 @@ const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
 const bookmarksRouter = require('./bookmarks-router');
 const logger = require('./logger')
 
-app.use(morgan(morganOption));
+app.use(morgan(morganOption, {
+  skip: () => NODE_ENV === 'test'
+}));
 app.use(cors());
 app.use(helmet());
 
