@@ -56,7 +56,7 @@ bookmarksRouter
       .then(bookmark => {
         res
         .status(201)
-        .location(path.posix.joing(req.originalUrl, `/${articled.id}`))
+        .location(path.posix.join(req.originalUrl, `/${bookmark.id}`))
         .json(bookmark)
       })
       .catch(next)
@@ -93,6 +93,27 @@ bookmarksRouter
     )
       .then(() => {
         logger.info(`Bookmark with id ${bookmark_id} deleted.`)
+        res.status(204).end()
+      })
+      .catch(next)
+  })
+  .patch(bookmarksJson, (req, res, next) => {
+    const { title, url, rating, description } = req.body;
+    const bookmarkToUpdate = { title, url, rating, description }
+    
+    const numberOfValues = Object.values(bookmarkToUpdate).filter(Boolean).length
+    if (numberOfValues === 0) {
+      return res.status(400).json({
+        error: { message: `Request body must contain either 'title', 'url', 'rating', or 'description'`}
+      })
+    }
+
+    BookmarksService.updateBookmark(
+      req.app.get('db'),
+      req.params.bookmark_id,
+      bookmarkToUpdate
+    )
+      .then(() => {
         res.status(204).end()
       })
       .catch(next)
